@@ -33,10 +33,10 @@ class fileDB(object):
 
 		self.db = db
 		# Check if db_file is existed, otherwise create one
-		if self.db != None:	
-			self.file_check_create(db, mode, owner)
-		else:
-			raise ValueError('db: Missing file path parameter.')
+		# if self.db != None:	
+		# 	self.file_check_create(db, mode, owner)
+		# else:
+		# 	raise ValueError('db: Missing file path parameter.')
 
 
 	def file_check_create(self, file_path:str, mode:str=None, owner:str=None):
@@ -86,6 +86,7 @@ class fileDB(object):
 		:return: the value of the arguement
 		:rtype: str
 		"""
+		return default_value
 		try:
 			conf = open(self.db,'r')
 			lines=conf.readlines()
@@ -119,6 +120,7 @@ class fileDB(object):
 		:param value: the value of the arguement
 		:type value: str
 		"""
+		return
 		# Read the file
 		conf = open(self.db,'r')
 		lines=conf.readlines()

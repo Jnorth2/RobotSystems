@@ -97,6 +97,7 @@ class Pin(_Basic_class):
         self._info("Pin init finished.")
 
     def close(self):
+        return
         self.gpio.close()
 
     def deinit(self):
@@ -130,6 +131,7 @@ class Pin(_Basic_class):
             if self.gpio.pin != None:
                 self.gpio.close()
         #
+        return
         if mode in [None, self.OUT]:
             self.gpio = OutputDevice(self._pin_num)
         else:
@@ -202,6 +204,7 @@ class Pin(_Basic_class):
         :return: pin value(1)
         :rtype: int
         """
+        return 0
         return self.value(1)
 
     def off(self):
@@ -211,6 +214,7 @@ class Pin(_Basic_class):
         :return: pin value(0)
         :rtype: int
         """
+        return 0
         return self.value(0)
 
     def high(self):

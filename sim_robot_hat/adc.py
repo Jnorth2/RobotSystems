@@ -15,11 +15,11 @@ class ADC(I2C):
         :param chn: channel number (0-7/A0-A7)
         :type chn: int/str
         """
-        if address is not None:
-            super().__init__(address, *args, **kwargs)
-        else:
-            super().__init__(self.ADDR, *args, **kwargs)
-        self._debug(f'ADC device address: 0x{self.address:02X}')
+        # if address is not None:
+        #     super().__init__(address, *args, **kwargs)
+        # else:
+        #     super().__init__(self.ADDR, *args, **kwargs)
+        # self._debug(f'ADC device address: 0x{self.address:02X}')
 
         if isinstance(chn, str):
             # If chn is a string, assume it's a pin name, remove A and convert to int

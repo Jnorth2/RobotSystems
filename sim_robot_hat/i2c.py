@@ -39,23 +39,24 @@ class I2C(_Basic_class):
         """
         super().__init__(*args, **kwargs)
         self._bus = bus
-        self._smbus = SMBus(self._bus)
-        if isinstance(address, list):
-            connected_devices = self.scan()
-            for _addr in address:
-                if _addr in connected_devices:
-                    self.address = _addr
-                    break
-            else:
-                self.address = address[0]
-        else:
-            self.address = address
+        # self._smbus = SMBus(self._bus)
+        # if isinstance(address, list):
+        #     connected_devices = self.scan()
+        #     for _addr in address:
+        #         if _addr in connected_devices:
+        #             self.address = _addr
+        #             break
+        #     else:
+        #         self.address = address[0]
+        # else:
+        #     self.address = address
 
         # print(f'address: 0x{self.address:02X}')
 
     @_retry_wrapper
     def _write_byte(self, data):
         # with I2C.i2c_lock.get_lock():
+        return
         self._debug(f"_write_byte: [0x{data:02X}]")
         result = self._smbus.write_byte(self.address, data)
         return result
@@ -69,6 +70,7 @@ class I2C(_Basic_class):
     @_retry_wrapper
     def _write_word_data(self, reg, data):
         # with I2C.i2c_lock.get_lock():
+        return
         self._debug(f"_write_word_data: [0x{reg:02X}] [0x{data:04X}]")
         return self._smbus.write_word_data(self.address, reg, data)
 
@@ -258,7 +260,7 @@ class I2C(_Basic_class):
         return self.address in self.scan()
 
     def __del__(self):
-        self._smbus.close()
+        # self._smbus.close()
         self._smbus = None
 
 if __name__ == "__main__":
