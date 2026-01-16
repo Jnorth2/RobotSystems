@@ -20,7 +20,10 @@ def bad_driving(px, speed, angle, dist):
     dist: float
         The distance to drive (in PiCar Units).
     """
-    t = dist/speed
+    if speed == 0:
+        t = 0.1
+    else:
+        t = dist/speed
     px.set_dir_servo_angle(angle)
     time.sleep(0.1)
     px.forward(speed)
