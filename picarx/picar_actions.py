@@ -40,15 +40,15 @@ def crashing_parallel_park(px, direction):
         The Picarx object to control the car.
     """
     #Step 1: Turn wheels and Reverse a distance
-    bad_driving(px, -50, direction*30, 15)
+    bad_driving(px, -50, direction*30, 50)
     #Step 2: Straighten wheels and Reverse a distance
     bad_driving(px, -50, 0, 25)
     #Step 3: Turn wheels in opposite direction and Reverse a distance
-    bad_driving(px, -50, -direction*30, 15)
+    bad_driving(px, -50, -direction*30, 45)
     #Step 4: Straighten wheels and Reverse a distance
-    bad_driving(px, -50, 0, 25)
+    bad_driving(px, -50, 0, 10)
     #Step 5: Drive Forward a distance
-    bad_driving(px, 50, 0, 10)
+    bad_driving(px, 50, 0, 20)
 
 def idiot_three_point_turn(px, direction):
     """
@@ -61,11 +61,13 @@ def idiot_three_point_turn(px, direction):
         The direction to turn.
     """
     #Step 1: Turn wheels and Drive Forward a distance
-    bad_driving(px, 50, direction*30, 35)
+    bad_driving(px, 30, direction*30, 90)
     #Step 2: Straighten wheels and Reverse a distance
-    bad_driving(px, -50, direction*-30, 35)
-    #Step 3: Turn wheels straight and Drive Forward a distance
-    bad_driving(px, 50, 0, 35)
+    bad_driving(px, -30, direction*-30, 90)
+    #Step 3: Turn wheels and Drive Forward a distance
+    # bad_driving(px, 50, direction * 30, 35)
+    #Step 4: Straighten Wheels and Drive Forward
+    bad_driving(px, 50, 0, 10)
 
 
 
@@ -76,23 +78,23 @@ if __name__ == "__main__":
     while True:
         command = input("Enter command (w, a, s, d, pl, pr, 3l, 3r, x(stop), q): ")
         if command == "w":
-            bad_driving(px, 50, angle, 0.5)
+            bad_driving(px, 50, angle, 50)
         elif command == "s":
-            bad_driving(px, -50, angle, 0.5)
+            bad_driving(px, -50, angle, 50)
         elif command == "a":
-            angle += 15
-            bad_driving(px, 0, angle, 0.5)
-        elif command == "d":
             angle -= 15
-            bad_driving(px, 0, angle, 0.5)
+            bad_driving(px, 0, angle, 50)
+        elif command == "d":
+            angle += 15
+            bad_driving(px, 0, angle, 50)
         elif command == "pl":
-            crashing_parallel_park(px, 1)
-        elif command == "pr":
             crashing_parallel_park(px, -1)
+        elif command == "pr":
+            crashing_parallel_park(px, 1)
         elif command == "3l":
-            idiot_three_point_turn(px, 1)
-        elif command == "3r":
             idiot_three_point_turn(px, -1)
+        elif command == "3r":
+            idiot_three_point_turn(px, 1)
         elif command == "x":
             px.stop()
         elif command == "q":
