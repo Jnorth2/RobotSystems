@@ -18,12 +18,12 @@ def bad_driving(px, speed, angle, dist):
     angle: float
         The angle to turn the car (in degrees).
     dist: float
-        The distance to drive (in PiCar Units).
+        The magnitude of the distance to drive (in PiCar Units).
     """
     if speed == 0:
         t = 0.1
     else:
-        t = dist/speed
+        t = dist/abs(speed)
     px.set_dir_servo_angle(angle)
     time.sleep(0.1)
     px.forward(speed)
