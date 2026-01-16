@@ -70,7 +70,7 @@ if __name__ == "__main__":
     atexit.register(px.stop)
     angle = 0
     while True:
-        command = input("Enter command (w, a, s, d, pl, pr, 3l, 3r, x(stop)): ")
+        command = input("Enter command (w, a, s, d, pl, pr, 3l, 3r, x(stop), q): ")
         if command == "w":
             bad_driving(px, 50, angle, 0.5)
         elif command == "s":
@@ -91,6 +91,9 @@ if __name__ == "__main__":
             idiot_three_point_turn(px, -1)
         elif command == "x":
             px.stop()
+        elif command == "q":
+            px.stop()
+            break
         else:
             print("Invalid command.")
 
