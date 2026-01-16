@@ -7,7 +7,8 @@ import time
 
 def bad_driving(px, speed, angle, dist):
     """
-    Function to drive at a set speed, angle, and distance.
+    Function to drive at a set speed, angle, and distance. 
+    Drives roughly 180mm per second at speed = 50.
 
     Parameters:
     -----------
@@ -39,15 +40,15 @@ def crashing_parallel_park(px, direction):
         The Picarx object to control the car.
     """
     #Step 1: Turn wheels and Reverse a distance
-    bad_driving(px, -50, direction*30, 0.5)
+    bad_driving(px, -50, direction*30, 15)
     #Step 2: Straighten wheels and Reverse a distance
-    bad_driving(px, -50, 0, 0.5)
+    bad_driving(px, -50, 0, 25)
     #Step 3: Turn wheels in opposite direction and Reverse a distance
-    bad_driving(px, -50, -direction*30, 0.5)
+    bad_driving(px, -50, -direction*30, 15)
     #Step 4: Straighten wheels and Reverse a distance
-    bad_driving(px, -50, 0, 0.5)
+    bad_driving(px, -50, 0, 25)
     #Step 5: Drive Forward a distance
-    bad_driving(px, 50, 0, 0.2)
+    bad_driving(px, 50, 0, 10)
 
 def idiot_three_point_turn(px, direction):
     """
@@ -60,11 +61,11 @@ def idiot_three_point_turn(px, direction):
         The direction to turn.
     """
     #Step 1: Turn wheels and Drive Forward a distance
-    bad_driving(px, 50, direction*30, 0.5)
+    bad_driving(px, 50, direction*30, 35)
     #Step 2: Straighten wheels and Reverse a distance
-    bad_driving(px, -50, direction*-30, 0.5)
-    #Step 3: Turn wheels in opposite direction and Drive Forward a distance
-    bad_driving(px, 50, 0, 0.5)
+    bad_driving(px, -50, direction*-30, 35)
+    #Step 3: Turn wheels straight and Drive Forward a distance
+    bad_driving(px, 50, 0, 35)
 
 
 
