@@ -213,13 +213,12 @@ class Picarx(object):
     def forward(self, speed):
         current_angle = self.dir_current_angle
         v_i, v_o = self.ackerman_steering(speed, current_angle)
-        self.set_motor_speed(1, 1*v_i)
-        self.set_motor_speed(2, -v_o) 
+        self.set_motor_speed(1, 1*v_o)
+        self.set_motor_speed(2, -v_i) 
         logging.debug(f"Set speed: {speed}, angle: {current_angle}, v_i: {v_i}, v_o: {v_o}")    
  
 
     def ackerman_steering(self, speed, angle):
-        angle = angle * math.pi / 180
         v_i = speed *(1 - (self.CAR_L * math.tan(math.radians(angle))) / (2* self.CAR_W))
         v_o = speed *(1 + (self.CAR_L * math.tan(math.radians(angle))) / (2* self.CAR_W))
         if v_i > 100:
