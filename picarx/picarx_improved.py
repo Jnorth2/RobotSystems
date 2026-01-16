@@ -219,6 +219,7 @@ class Picarx(object):
  
 
     def ackerman_steering(self, speed, angle):
+        angle = angle * math.pi / 180
         v_i = speed *(1 - (self.CAR_L * math.tan(math.radians(angle))) / (2* self.CAR_W))
         v_o = speed *(1 + (self.CAR_L * math.tan(math.radians(angle))) / (2* self.CAR_W))
         if v_i > 100:
@@ -286,8 +287,7 @@ class Picarx(object):
 
 if __name__ == "__main__":
     px = Picarx()
-
-    
+    px.set_dir_servo_angle(0)
     px.forward(50)
     time.sleep(1)
     px.backward(50)
@@ -302,4 +302,5 @@ if __name__ == "__main__":
     time.sleep(1)
     px.backward(50)
     time.sleep(1)
+    px.set_dir_servo_angle(0)
     px.stop()
