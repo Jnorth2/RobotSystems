@@ -49,6 +49,7 @@ class Interpreter():
         else:
             self.sign = -1
         # self.state = []
+        self.last_val = 0
 
     def process(self, pin_vals):
         # if self.state == []:
@@ -60,21 +61,30 @@ class Interpreter():
         match(abs(left_diff) > self.line_threshold, abs(right_diff) > self.line_threshold):
             case(False, False):
                 #Line is either centered or non existant
-                return 0
+                if abs(self.last_val) > self.line_threshold:
+                    return self.last_val
+                else:
+                    self.last_val = 0
+                    return 0
             case(True, False):
                 #pin is under left
                 if self.sign * left_diff > 0:
+                    self.last_val = abs(left_diff/max_val)
                     return abs(left_diff/max_val)
                 else:
+                    self.last_val = -1 * abs(right_diff/max_val)
                     return -1 * abs(right_diff/max_val)
             case(False, True):
                 if self.sign * right_diff > 0:
+                    self.last_val = -1 * abs(right_diff/max_val)
                     return -1 * abs(right_diff/max_val)
                 else:
+                    self.last_val = abs(left_diff/max_val)
                     return abs(left_diff/max_val)
             case(True, True):
                 #line is centered
                 #could interpolate to adjust
+                self.last_val = 0
                 return 0
             
     
