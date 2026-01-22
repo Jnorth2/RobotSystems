@@ -86,15 +86,15 @@ class Control():
     def update_steer(self, position):
         #find angle
 
-        self.px.set_dir_servo_angle(self.scaling_factor * position * self.px.DIR_MAX)
+        self.px.set_dir_servo_angle(-1 * self.scaling_factor * position * self.px.DIR_MAX)
         logging.debug(f"Steering angle: {self.scaling_factor * position * self.px.DIR_MAX}")
 
 if __name__ == "__main__":
     pin_names = ["A0", "A1", "A2"]
     px = picarx_improved.Picarx()
     sensor = Sensor(pin_names=pin_names)
-    interpreter = Interpreter(line_threshold=1.0, is_dark=1)
-    control = Control(px, 1)
+    interpreter = Interpreter(line_threshold=0.2, is_dark=1)
+    control = Control(px, 1.75)
 
     line = 0
     pin_vals = []
@@ -104,6 +104,7 @@ if __name__ == "__main__":
         line = interpreter.process(pin_vals=pin_vals)
         logging.debug(f"Line Position {line}")
         control.update_steer(position=line)
-
+        time.sleep(0.2)
+        px.forward(20)
 
 
