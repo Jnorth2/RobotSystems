@@ -61,7 +61,11 @@ class Interpreter():
         match(abs(left_diff) > self.line_threshold, abs(right_diff) > self.line_threshold):
             case(False, False):
                 #Line is either centered or non existant
-                if abs(self.last_val) > self.line_threshold:
+                if self.last_val > 0.2:
+                    self.last_val = 1 
+                    return self.last_val
+                elif self.last_val < -0.2:
+                    self.last_val = -1
                     return self.last_val
                 else:
                     self.last_val = 0
@@ -103,7 +107,7 @@ if __name__ == "__main__":
     pin_names = ["A0", "A1", "A2"]
     px = picarx_improved.Picarx()
     sensor = Sensor(pin_names=pin_names)
-    interpreter = Interpreter(line_threshold=0.2, is_dark=1)
+    interpreter = Interpreter(line_threshold=0.3, is_dark=1)
     control = Control(px, 1.75)
 
     line = 0
@@ -114,7 +118,7 @@ if __name__ == "__main__":
         line = interpreter.process(pin_vals=pin_vals)
         logging.debug(f"Line Position {line}")
         control.update_steer(position=line)
-        time.sleep(0.2)
+        time.sleep(0.1)
         px.forward(20)
 
 
