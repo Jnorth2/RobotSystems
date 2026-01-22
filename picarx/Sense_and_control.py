@@ -38,6 +38,7 @@ class Sensor():
         self.pin_val = []
         for i, pin in enumerate(self.pins):
             self.pin_val.append(pin.read_voltage())
+        # logging.debug(f"Pin values {self.pin_val}")
         return self.pin_val
     
 class Interpreter():
@@ -48,6 +49,7 @@ class Interpreter():
         else:
             self.sign = -1
         # self.state = []
+
     def process(self, pin_vals):
         # if self.state == []:
         #     self.state = pin_vals
@@ -74,6 +76,7 @@ class Interpreter():
                 #line is centered
                 #could interpolate to adjust
                 return 0
+            
     
 class Control():
     def __init__(self, px, scaling_factor = 1):
@@ -82,7 +85,9 @@ class Control():
     
     def update_steer(self, position):
         #find angle
+
         self.px.set_dir_servo_angle(self.scaling_factor * position * self.px.DIR_MAX)
+        logging.debug(f"Steering angle: {self.scaling_factor * position * self.px.DIR_MAX}")
 
 if __name__ == "__main__":
     pin_names = ["A0", "A1", "A0"]
@@ -95,7 +100,10 @@ if __name__ == "__main__":
     pin_vals = []
     while True:
         pin_vals = sensor.read()
+        logging.debug(f"Pin Vals: {pin_vals}")
         line = interpreter.process(pin_vals=pin_vals)
+        logging.debug(f"Line Position {line}")
         control.update_steer(position=line)
+
 
 
