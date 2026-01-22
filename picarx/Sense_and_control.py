@@ -76,9 +76,9 @@ class Interpreter():
                 return 0
     
 class Control():
-    def __init__(self, scaling_factor, px):
+    def __init__(self, px, scaling_factor = 1):
         self.scaling_factor = scaling_factor
-        self.px = car
+        self.px = px
     
     def update_steer(self, position):
         #find angle
@@ -86,10 +86,10 @@ class Control():
 
 if __name__ == "__main__":
     pin_names = ["A0", "A1", "A0"]
-    car = picarx_improved.Picarx()
+    px = picarx_improved.Picarx()
     sensor = Sensor(pin_names=pin_names)
     interpreter = Interpreter(line_threshold=1.0, is_dark=1)
-    control = Control(1, car)
+    control = Control(px, 1)
 
     line = 0
     pin_vals = []
