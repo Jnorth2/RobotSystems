@@ -90,7 +90,7 @@ class Control():
         logging.debug(f"Steering angle: {self.scaling_factor * position * self.px.DIR_MAX}")
 
 if __name__ == "__main__":
-    pin_names = ["A0", "A1", "A0"]
+    pin_names = ["A0", "A1", "A2"]
     px = picarx_improved.Picarx()
     sensor = Sensor(pin_names=pin_names)
     interpreter = Interpreter(line_threshold=1.0, is_dark=1)

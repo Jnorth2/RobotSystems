@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from .i2c import I2C
+import numpy as np
 
 
 class ADC(I2C):
@@ -43,7 +44,7 @@ class ADC(I2C):
         :return: ADC value(0-4095)
         :rtype: int
         """
-        return 0
+        return 4095 * np.random.uniform()
         # Write register address
         self.write([self.chn, 0, 0])
         # Read values
