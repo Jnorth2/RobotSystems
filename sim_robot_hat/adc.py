@@ -43,6 +43,7 @@ class ADC(I2C):
         :return: ADC value(0-4095)
         :rtype: int
         """
+        return 0
         # Write register address
         self.write([self.chn, 0, 0])
         # Read values
@@ -64,5 +65,5 @@ class ADC(I2C):
         value = self.read()
         # Convert to voltage
         voltage = value * 3.3 / 4095
-        self._debug(f"Read voltage: {voltage}")
+        # self._debug(f"Read voltage: {voltage}")
         return voltage
