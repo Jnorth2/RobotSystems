@@ -85,7 +85,7 @@ class ImageProcessing():
         if cnts is not None and len(cnts) > 0:
             contour = max(cnts, key = cv.contourArea)
         if contour is None:
-            return None, None
+            return None, None, None
         rect = cv.minAreaRect(contour)
         box = cv.boxPoints(rect)
         box = box.astype(int)
@@ -187,15 +187,14 @@ class ImageProcessing():
         return a, b
     
 class ControlForImage():
-    def __init__(self, px, scaling_factor = 1, shift_thresh = 240):
+    def __init__(self, px, scaling_factor = 1):
         self.px = px
         self.scaling_factor = scaling_factor
-        self.shift_thresh = shift_thresh
         self.px.set_cam_tilt_angle(-35)
 
     def update_steer(self, angle, shift):
-        shift_angle = -1 * self.scaling_factor * shift/self.shift_thresh * self.px.DIR_MAX
-        line_angle = 90-angle
+        shift_angle = -1 * self.scaling_factor * shift * self.px.DIR_MAX
+        line_angle = -1 * (90-angle)
         total_turn_angle = shift_angle + line_angle
         #check if greater than max, set to inverse max, and reverse
         if abs(total_turn_angle) > self.px.DIR_MAX:
@@ -206,15 +205,10 @@ class ControlForImage():
             self.px.set_dir_servo_angle(total_turn_angle)
             return 1
 
-
-
-
-
-
 if __name__ == "__main__":
     px = picarx_improved.Picarx()
     image_processor = ImageProcessing(is_dark=True, on_the_robot=on_the_robot, crop=[640, 160])
-    control = ControlForImage(px)
+    control = ControlForImage(px, scaling_factor=1.75)
     angle = 90
     shift = 0
     while True:
@@ -222,7 +216,4 @@ if __name__ == "__main__":
         logging.debug(f"Line Angle: {angle} | Line Shift: {shift}")
         direction = control.update_steer(angle, shift)
         time.sleep(0.1)
-        # px.forward(direction * 20)
-
-
-    
+        px.forward(direction * 20)
