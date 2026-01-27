@@ -30,11 +30,12 @@ import time
 
 
 class ImageProcessing():
-    def __init__(self):
+    def __init__(self, is_dark=True):
         self.picam = Picamera2()
         config = self.picam.create_preview_configuration(
             main={"format": "RGB888", "size": (640, 480)}
         )
+        self.is_dark = is_dark
         self.picam.configure(config)
         self.picam.start()
         time.sleep(0.5)
@@ -44,7 +45,11 @@ class ImageProcessing():
         frame_bgr = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
         frame_grey = cv.cvtColor(frame_bgr, cv.COLOR_BGR2GRAY)
         frame_grey = cv.GaussianBlur(frame_grey, (5,5), 0)
-        frame_binary = cv.adaptiveThreshold(frame_grey, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+        if self.is_dark:
+            binary_thresh = cv.THRESH_BINARY_INV
+        else:
+            binary_thresh = cv.THRESH_BINARY
+        frame_binary = cv.adaptiveThreshold(frame_grey, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, binary_thresh, 11, 2)
         return frame_binary
     
     def get_contour(self, frame):
@@ -178,14 +183,14 @@ class ControlForImage():
 
 if __name__ == "__main__":
     px = picarx_improved.Picarx()
-    image_processor = ImageProcessing()
-    px.set_cam_tilt_angle(-30)
+    image_processor = ImageProcessing(is_dark=True)
+    control = ControlForImage()
     angle = 90
     shift = 0
     while True:
         angle, shift = image_processor.process_image(draw=False)
         logging.debug(f"Line Angle: {angle} | Line Shift: {shift}")
-        # direction = image_processor.update_steer(angle, shift)
+        # direction = control.update_steer(angle, shift)
         # time.sleep(0.1)
         # px.forward(direction * 20)
 
