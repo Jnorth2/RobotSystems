@@ -48,22 +48,22 @@ class ImageProcessing():
         return frame_binary
     
     def get_contour(self, frame):
-        frame2, cnts, hierarchy = cv.findContours(frame, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
+        cnts, hierarchy = cv.findContours(frame, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
         contour = None
         if cnts is not None and len(cnts) > 0:
             contour = max(cnts, key = cv.contourArea)
-        if contour == None:
+        if contour is None:
             return None, None
         rect = cv.minAreaRect(contour)
         box = cv.boxPoints(rect)
-        box = np.int0(box)
+        box = box.astype(int)
         box = self.order_box(box)
-        return contour, box
+        return frame, contour, box
     
     def process_image(self, draw = False):
         frame = self.get_binary()
         h, w = frame.shape[:2]
-        contour, box = self.get_contour(frame)
+        frame, contour, box = self.get_contour(frame)
         p1, p2 = self.calc_box_vector(box)
         angle = self.get_vert_angle(p1, p2, w, h)
         shift = self.get_horz_shift(p1[0], w)
@@ -108,7 +108,7 @@ class ImageProcessing():
         idx = [0, 1, 2, 3]
         if v_side < h_side:
             idx = [0, 3, 1, 2]
-        return ((box[idx[0]][0] + box[idx[1]][0]) / 2, (box[idx[0]][1] + box[idx[1]][1]) / 2), ((box[idx[2]][0] + box[idx[3]][0]) / 2, (box[idx[2]][1]  +box[idx[3]][1]) / 2)
+        return ((box[idx[0]][0] + box[idx[1]][0]) // 2, (box[idx[0]][1] + box[idx[1]][1]) // 2), ((box[idx[2]][0] + box[idx[3]][0]) // 2, (box[idx[2]][1]  +box[idx[3]][1]) // 2)
     
     def calc_line_length(self, p1, p2):
         dx = p1[0] - p2[0]
@@ -156,7 +156,8 @@ class ControlForImage():
         self.px = px
         self.scaling_factor = scaling_factor
         self.shift_thresh = shift_thresh
-    
+        self.px.set_cam_tilt_angle(-30)
+
     def update_steer(self, angle, shift):
         shift_angle = -1 * self.scaling_factor * shift/self.shift_thresh * self.px.DIR_MAX
         line_angle = 90-angle
@@ -178,11 +179,11 @@ class ControlForImage():
 if __name__ == "__main__":
     px = picarx_improved.Picarx()
     image_processor = ImageProcessing()
-
-    angle = 0
+    px.set_cam_tilt_angle(-30)
+    angle = 90
     shift = 0
     while True:
-        angle, shift = image_processor.process_image(draw=True)
+        angle, shift = image_processor.process_image(draw=False)
         logging.debug(f"Line Angle: {angle} | Line Shift: {shift}")
         # direction = image_processor.update_steer(angle, shift)
         # time.sleep(0.1)
