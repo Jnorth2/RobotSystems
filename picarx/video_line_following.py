@@ -66,16 +66,16 @@ class ImageProcessing():
         ret, frame_binary = cv.threshold(frame_grey, 0, 255, binary_thresh + cv.THRESH_OTSU)
         #crop the frame
         h, w = frame_binary.shape[:2]
-        w_start = max(0, w//2-self.crop[1]//2)
-        w_end = min(w, w//2 + self.crop[1]//2)
-        crop_frame_binary = frame_binary[h-self.crop[0]:h, w_start:w_end]
+        w_start = max(0, w//2-self.crop[0]//2)
+        w_end = min(w, w//2 + self.crop[0]//2)
+        crop_frame_binary = frame_binary[h-self.crop[1]:h, w_start:w_end]
         if verbose:
            # cv.imshow("Capture", frame_bgr)
-           # cv.waitKey(0)
+           # cv.waitKey(100)
             # cv.imshow("Binary", frame_binary)
-            # cv.waitKey(0)
-            cv.imshow("Cropped Binary", frame_binary)
-            cv.waitKey(0)
+            # cv.waitKey(100)
+            cv.imshow("Cropped Binary", crop_frame_binary)
+            cv.waitKey(100)
         
         return crop_frame_binary
     
@@ -107,12 +107,12 @@ class ImageProcessing():
             cv.drawContours(frame,[box],0,(255,0,0),2)
             cv.line(frame, p1, p2, (0, 255, 0), 3)
             msg_a = "Angle {0}".format(int(angle))
-            msg_s = "Shift {0}".format(int(shift))
+            msg_s = f"Shift {shift:.3f}"
 
             cv.putText(frame, msg_a, (10, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
             cv.putText(frame, msg_s, (10, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
             cv.imshow("Image", frame)
-            cv.waitKey(0)
+            cv.waitKey(100)
 
         return angle, shift
     
@@ -152,7 +152,7 @@ class ImageProcessing():
 
     def get_horz_shift(self, x, w):
         hw = w / 2
-        return (hw - x) / hw
+        return min(max((hw - x) / hw, -1),1)
 
     def calc_rect_area(self, rect_points):
         a = self.calc_line_length(rect_points[0], rect_points[1])
@@ -213,14 +213,14 @@ class ControlForImage():
 
 if __name__ == "__main__":
     px = picarx_improved.Picarx()
-    image_processor = ImageProcessing(is_dark=True, on_the_robot=on_the_robot)
+    image_processor = ImageProcessing(is_dark=True, on_the_robot=on_the_robot, crop=[640, 160])
     control = ControlForImage(px)
     angle = 90
     shift = 0
     while True:
         angle, shift = image_processor.process_image(draw=True)
         logging.debug(f"Line Angle: {angle} | Line Shift: {shift}")
-        # direction = control.update_steer(angle, shift)
+        direction = control.update_steer(angle, shift)
         time.sleep(0.1)
         # px.forward(direction * 20)
 
