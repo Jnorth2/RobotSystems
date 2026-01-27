@@ -50,10 +50,10 @@ class ImageProcessing():
             frame_bgr = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
         else:
             ret, frame_bgr = self.cam.read()
-        print("Frame read:", ret)
-        if not ret or frame_bgr is None:
-            print("Camera failed, returning default")
-            return None
+            print("Frame read:", ret)
+            if not ret or frame_bgr is None:
+                print("Camera failed, returning default")
+                return None
 
         frame_grey = cv.cvtColor(frame_bgr, cv.COLOR_BGR2GRAY)
         frame_grey = cv.GaussianBlur(frame_grey, (5,5), 0)
@@ -61,10 +61,11 @@ class ImageProcessing():
             binary_thresh = cv.THRESH_BINARY_INV
         else:
             binary_thresh = cv.THRESH_BINARY
-        frame_binary = cv.adaptiveThreshold(frame_grey, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, binary_thresh, 11, 2)
+        #frame_binary = cv.adaptiveThreshold(frame_grey, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, binary_thresh, 11, 2)
+        ret, frame_binary = cv.threshold(frame_grey, 0, 255, binary_thresh + cv.THRESH_OTSU)
         if verbose:
-            cv.imshow("Capture", frame_bgr)
-            cv.waitKey(0)
+           # cv.imshow("Capture", frame_bgr)
+           # cv.waitKey(0)
             cv.imshow("Binary", frame_binary)
             cv.waitKey(0)
         return frame_binary
