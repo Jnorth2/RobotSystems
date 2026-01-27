@@ -4,7 +4,6 @@ from logdecorator import log_on_start, log_on_end, log_on_error
 import atexit
 import math
 import picarx_improved
-from picamera2 import Picamera2
 import cv2 as cv
 import numpy as np
 
@@ -18,6 +17,7 @@ on_the_robot = True
 try:
     from robot_hat import Pin, ADC, PWM, Servo, fileDB
     from robot_hat import Grayscale_Module, Ultrasonic, utils
+    from picamera2 import Picamera2
     on_the_robot = True
 except ImportError:
     import sys
@@ -30,19 +30,31 @@ import time
 
 
 class ImageProcessing():
-    def __init__(self, is_dark=True):
-        self.picam = Picamera2()
-        config = self.picam.create_preview_configuration(
-            main={"format": "RGB888", "size": (640, 480)}
-        )
+    def __init__(self, is_dark=True, on_the_robot = True):
         self.is_dark = is_dark
-        self.picam.configure(config)
-        self.picam.start()
+        if on_the_robot:
+            self.picam = Picamera2()
+            config = self.picam.create_preview_configuration(
+                main={"format": "RGB888", "size": (640, 480)}
+            )
+            self.picam.configure(config)
+            self.picam.start()
+        else:
+
+            self.cam = cv.VideoCapture("/dev/v4l/by-id/usb-Azurewave_Integrated_Camera_SN0001-video-index0")
         time.sleep(0.5)
         return
-    def get_binary(self):
-        frame = self.picam.capture_array()
-        frame_bgr = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+    def get_binary(self, verbose=False):
+        if on_the_robot:
+            frame = self.picam.capture_array()
+            frame_bgr = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+        else:
+            ret, frame_bgr = self.cam.read()
+        print("Frame read:", ret)
+        if not ret or frame_bgr is None:
+            print("Camera failed, returning default")
+            return None
+
         frame_grey = cv.cvtColor(frame_bgr, cv.COLOR_BGR2GRAY)
         frame_grey = cv.GaussianBlur(frame_grey, (5,5), 0)
         if self.is_dark:
@@ -50,6 +62,11 @@ class ImageProcessing():
         else:
             binary_thresh = cv.THRESH_BINARY
         frame_binary = cv.adaptiveThreshold(frame_grey, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, binary_thresh, 11, 2)
+        if verbose:
+            cv.imshow("Capture", frame_bgr)
+            cv.waitKey(0)
+            cv.imshow("Binary", frame_binary)
+            cv.waitKey(0)
         return frame_binary
     
     def get_contour(self, frame):
@@ -66,7 +83,9 @@ class ImageProcessing():
         return frame, contour, box
     
     def process_image(self, draw = False):
-        frame = self.get_binary()
+        frame = self.get_binary(verbose=draw)
+        if frame is None:
+            return 90, 0
         h, w = frame.shape[:2]
         frame, contour, box = self.get_contour(frame)
         p1, p2 = self.calc_box_vector(box)
@@ -83,6 +102,7 @@ class ImageProcessing():
             cv.putText(frame, msg_a, (10, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
             cv.putText(frame, msg_s, (10, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
             cv.imshow("Image", frame)
+            cv.waitKey(0)
 
         return angle, shift
     
@@ -183,15 +203,15 @@ class ControlForImage():
 
 if __name__ == "__main__":
     px = picarx_improved.Picarx()
-    image_processor = ImageProcessing(is_dark=True)
-    control = ControlForImage()
+    image_processor = ImageProcessing(is_dark=True, on_the_robot=on_the_robot)
+    control = ControlForImage(px)
     angle = 90
     shift = 0
     while True:
-        angle, shift = image_processor.process_image(draw=False)
+        angle, shift = image_processor.process_image(draw=True)
         logging.debug(f"Line Angle: {angle} | Line Shift: {shift}")
         # direction = control.update_steer(angle, shift)
-        # time.sleep(0.1)
+        time.sleep(0.1)
         # px.forward(direction * 20)
 
 
