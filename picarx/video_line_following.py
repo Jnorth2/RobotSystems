@@ -30,7 +30,7 @@ import time
 
 
 class ImageProcessing():
-    def __init__(self, is_dark=True, on_the_robot = True):
+    def __init__(self, is_dark=True, on_the_robot = True, crop = [640, 480]):
         self.is_dark = is_dark
         if on_the_robot:
             self.picam = Picamera2()
@@ -40,9 +40,10 @@ class ImageProcessing():
             self.picam.configure(config)
             self.picam.start()
         else:
-
-            self.cam = cv.VideoCapture("/dev/v4l/by-id/usb-Azurewave_Integrated_Camera_SN0001-video-index0")
+            self.cam = cv.VideoCapture(-1)
+            # self.cam = cv.VideoCapture("/dev/v4l/by-id/usb-Azurewave_Integrated_Camera_SN0001-video-index0")
         time.sleep(0.5)
+        self.crop = crop
         return
     def get_binary(self, verbose=False):
         if on_the_robot:
@@ -63,12 +64,20 @@ class ImageProcessing():
             binary_thresh = cv.THRESH_BINARY
         #frame_binary = cv.adaptiveThreshold(frame_grey, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, binary_thresh, 11, 2)
         ret, frame_binary = cv.threshold(frame_grey, 0, 255, binary_thresh + cv.THRESH_OTSU)
+        #crop the frame
+        h, w = frame_binary.shape[:2]
+        w_start = max(0, w//2-self.crop[1]//2)
+        w_end = min(w, w//2 + self.crop[1]//2)
+        crop_frame_binary = frame_binary[h-self.crop[0]:h, w_start:w_end]
         if verbose:
            # cv.imshow("Capture", frame_bgr)
            # cv.waitKey(0)
-            cv.imshow("Binary", frame_binary)
+            # cv.imshow("Binary", frame_binary)
+            # cv.waitKey(0)
+            cv.imshow("Cropped Binary", frame_binary)
             cv.waitKey(0)
-        return frame_binary
+        
+        return crop_frame_binary
     
     def get_contour(self, frame):
         cnts, hierarchy = cv.findContours(frame, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
@@ -182,7 +191,7 @@ class ControlForImage():
         self.px = px
         self.scaling_factor = scaling_factor
         self.shift_thresh = shift_thresh
-        self.px.set_cam_tilt_angle(-30)
+        self.px.set_cam_tilt_angle(-35)
 
     def update_steer(self, angle, shift):
         shift_angle = -1 * self.scaling_factor * shift/self.shift_thresh * self.px.DIR_MAX
