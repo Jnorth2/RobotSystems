@@ -98,6 +98,9 @@ class ImageProcessing():
             return 90, 0
         h, w = frame.shape[:2]
         frame, contour, box = self.get_contour(frame)
+        #Check if we lost the line
+        if box is None:
+            return 90, 0
         p1, p2 = self.calc_box_vector(box)
         angle = self.get_vert_angle(p1, p2, w, h)
         shift = self.get_horz_shift(p1[0], w)
