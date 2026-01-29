@@ -196,22 +196,28 @@ class ControlForImage():
         self.px.set_cam_tilt_angle(-35)
 
     def update_steer(self, angle, shift):
-        shift_angle = -1 * self.scaling_factor * shift * self.px.DIR_MAX
-        line_angle = (1-abs(shift)) * (90-angle)
-        total_turn_angle = shift_angle + line_angle
+        shift_angle = min(max(-1 * self.scaling_factor * shift * self.px.DIR_MAX, -self.px.DIR_MAX), self.px.DIR_MAX)
+        line_angle =max(1-abs(shift), 1) * (90-angle)
+        total_turn_angle = shift_angle #+ line_angle
         #check if greater than max, set to inverse max, and reverse
-        if abs(total_turn_angle) > self.px.DIR_MAX:
+        if abs(total_turn_angle) >= self.px.DIR_MAX:
+            #if total_turn_angle > 0:
+            #    total_turn_angle =  self.px.DIR_MAX
+            #else:
+            #    total_turn_angle = -self.px.DIR_MAX
             self.px.set_dir_servo_angle(-1 *total_turn_angle)
+            #self.px.set_cam_pan_angle(total_turn_angle)
             return -1
         #else set steering angle
         else:
             self.px.set_dir_servo_angle(total_turn_angle)
+            #self.px.set_cam_pan_angle(total_turn_angle)
             return 1
 
 if __name__ == "__main__":
     px = picarx_improved.Picarx()
-    image_processor = ImageProcessing(is_dark=True, on_the_robot=on_the_robot, crop=[640, 160])
-    control = ControlForImage(px, scaling_factor=1.75)
+    image_processor = ImageProcessing(is_dark=True, on_the_robot=on_the_robot, crop=[640, 180])
+    control = ControlForImage(px, scaling_factor=1.25)
     angle = 90
     shift = 0
     while True:
