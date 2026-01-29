@@ -197,7 +197,7 @@ class ControlForImage():
 
     def update_steer(self, angle, shift):
         shift_angle = -1 * self.scaling_factor * shift * self.px.DIR_MAX
-        line_angle = -1 * (90-angle)
+        line_angle = (1-abs(shift)) * (90-angle)
         total_turn_angle = shift_angle + line_angle
         #check if greater than max, set to inverse max, and reverse
         if abs(total_turn_angle) > self.px.DIR_MAX:
