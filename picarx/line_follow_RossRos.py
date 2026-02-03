@@ -4,6 +4,9 @@ from logdecorator import log_on_start, log_on_end, log_on_error
 import atexit
 import math
 import picarx_improved
+import sys
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..")))
 from RossROS import rossros
 
 logging_format = "%(asctime)s: %(message)s"
@@ -18,9 +21,6 @@ try:
     from robot_hat import Grayscale_Module, Ultrasonic, utils
     on_the_robot = True
 except ImportError:
-    import sys
-    sys.path.append(os.path.abspath(os.path.join(
-        os.path.dirname(__file__), "..")))
     from sim_robot_hat import Pin, ADC, PWM, Servo, fileDB
     from sim_robot_hat import Grayscale_Module, Ultrasonic, utils
     on_the_robot = False
