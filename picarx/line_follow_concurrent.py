@@ -59,11 +59,12 @@ class Sensor():
         
         
     def read(self, bus : Bus, delay_time):
+        logging.debug(f"in Sensor Read: {shutdown_event.is_set()}")
         while not shutdown_event.is_set():
             self.pin_val = []
             for i, pin in enumerate(self.pins):
                 self.pin_val.append(pin.read_voltage())
-            # logging.debug(f"Pin values {self.pin_val}")
+            #logging.debug(f"Pin values {self.pin_val}")
             bus.write(self.pin_val)
             time.sleep(delay_time)
 
@@ -80,9 +81,11 @@ class Interpreter():
     def process(self, bus_in, bus_out, delay_time):
         # if self.state == []:
         #     self.state = pin_vals
+        logging.debug(f"in process: {shutdown_event.is_set()}")
         while not shutdown_event.is_set():
             pin_vals = bus_in.read()
-            if not pin_vals:
+            #logging.debug(f"pin vals =  {pin_vals}")
+            if pin_vals == None:
                 time.sleep(delay_time)
                 continue
             left_diff = pin_vals[1] - pin_vals[0]
@@ -131,10 +134,11 @@ class Control():
     
     def update_steer(self, bus, delay_time):
         #find angle
-
+        logging.debug(f"In update steer: {shutdown_event.is_set()}")
         while not shutdown_event.is_set():
             position = bus.read()
-            if not position:
+            logging.debug(f"position: {position}")
+            if position == None:
                 time.sleep(delay_time)
                 continue
             if abs(position) == 1:
@@ -157,10 +161,10 @@ if __name__ == "__main__":
     sensor_bus = Bus()
     process_bus = Bus()
 
-    sensor_delay = 0.1
-    process_delay = 0.1
-    control_delay = 0.1
-
+    sensor_delay = 0.05
+    process_delay = 0.05
+    control_delay = 0.05
+    logging.debug("Starting futures")
     futures = []
     with ThreadPoolExecutor(max_workers=3) as executor:
         esensor = executor.submit(sensor.read, sensor_bus,  sensor_delay)
