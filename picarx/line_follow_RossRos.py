@@ -27,14 +27,17 @@ except ImportError:
 import time
 
 class Sensor():
-    def __init__(self, pin_names):
+    def __init__(self, pin_names, ultrasonic_pin_names):
         self.pins = []
         self.pin_val = []
         for pin in pin_names:
             self.pins.append(ADC(pin))
             self.pin_val.append(0.0)
         
-        
+        #setup ultrasonic sensor
+        self.ultrasonic = Ultrasonic(Pin(ultrasonic_pin_names[0]), Pin(ultrasonic_pin_names[1], mode=Pin.IN, pull=Pin.PULL_DOWN))
+        self.ultrasonic_val = self.ultrasonic.read()
+
     def read(self):
         self.pin_val = []
         for i, pin in enumerate(self.pins):
@@ -42,9 +45,14 @@ class Sensor():
         # logging.debug(f"Pin values {self.pin_val}")
         return self.pin_val
     
+    def read_ultrasonic(self):
+        self.ultrasonic_val = self.ultrasonic.read()
+        return self.ultrasonic_val
+
 class Interpreter():
-    def __init__(self, line_threshold=1.65, is_dark=1):
+    def __init__(self, line_threshold=1.65, is_dark=1, stop_thres=2):
         self.line_threshold = line_threshold
+        self.stop_thres = stop_thres
         if is_dark:
             self.sign = 1
         else:
@@ -92,15 +100,22 @@ class Interpreter():
                 self.last_val = 0
                 return 0
             
-    
+    def process_ultrasonic(self, ultrasonic_val):
+        if ultrasonic_val < self.stop_thres and ultrasonic_val >= 0:
+            return True
+        return False
+
+                
 class Control():
     def __init__(self, px, scaling_factor = 1):
         self.scaling_factor = scaling_factor
         self.px = px
     
-    def update_steer(self, position):
+    def update_steer(self, position, stop=False):
         #find angle
-        if abs(position) == 1:
+        if stop:
+            self.px.forward(0)
+        elif abs(position) == 1:
             self.px.set_dir_servo_angle(position * self.px.DIR_MAX)
             logging.debug(f"Steering angle: {self.px.DIR_MAX * position} and Direction = -1")
             px.forward(-20)
@@ -111,22 +126,30 @@ class Control():
 
 if __name__ == "__main__":
     pin_names = ["A0", "A1", "A2"]
+    ultrasonic_pins = ["D2", "D3"]
     px = picarx_improved.Picarx()
-    sensor = Sensor(pin_names=pin_names)
-    interpreter = Interpreter(line_threshold=0.3, is_dark=1)
+    sensor = Sensor(pin_names=pin_names, ultrasonic_pin_names=ultrasonic_pins)
+    interpreter = Interpreter(line_threshold=0.3, is_dark=1, stop_thres=2)
     control = Control(px, 1.75)
 
     term_bus = rossros.Bus(False, "Timer Termination Bus")
     timer = rossros.Timer(output_buses=term_bus,duration=10, delay=0.03,termination_buses= term_bus, name="Termination Timer")
     sensor_bus = rossros.Bus([0, 0, 0], name="Sensor Bus")
     position_bus = rossros.Bus(0, name="Position Bus")
+    us_sensor_bus = rossros.Bus(0, name="Ultrasonic Sensor Bus")
+    move_bus = rossros.Bus(0, name="Distance Bus")
+
     ross_sensor = rossros.Producer(sensor.read, sensor_bus, delay= 0.1, termination_buses=term_bus, name="Sensor")
+    ross_us_sensor = rossros.Producer(sensor.read_ultrasonic, us_sensor_bus, delay=0.1, termination_buses=term_bus, name="Ultrasonic Sensor")
+    ross_move = rossros.ConsumerProducer(interpreter.process_ultrasonic, ross_us_sensor, move_bus, delay=0.1, termination_buses=term_bus, name="Move Process")
     ross_process = rossros.ConsumerProducer(interpreter.process, sensor_bus, position_bus, delay=0.1, termination_buses=term_bus, name="Process")
-    ross_control = rossros.Consumer(control.update_steer, position_bus, delay=0.1, termination_buses=term_bus, name="Control")
+    ross_control = rossros.Consumer(control.update_steer, [position_bus, move_bus], delay=0.1, termination_buses=term_bus, name="Control")
 
     list_of_processes = [
         timer,
         ross_sensor,
+        ross_us_sensor,
+        ross_move,
         ross_process,
         ross_control,
     ]

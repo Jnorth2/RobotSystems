@@ -6,6 +6,7 @@ from .i2c import I2C
 import time
 from .basic import _Basic_class
 from typing import Union, List, Tuple, Optional
+import numpy as np
 
 class Ultrasonic():
     SOUND_SPEED = 343.3 # ms
@@ -24,6 +25,7 @@ class Ultrasonic():
         self.echo = Pin(echo._pin_num, mode=Pin.IN, pull=Pin.PULL_DOWN)
 
     def _read(self):
+        return 5 * np.random.uniform()
         self.trig.off()
         time.sleep(0.001)
         self.trig.on()
