@@ -47,6 +47,7 @@ class Sensor():
     
     def read_ultrasonic(self):
         self.ultrasonic_val = self.ultrasonic.read()
+        logging.debug(f"Ultrasonic Val: {self.ultrasonic_val}")
         return self.ultrasonic_val
 
 class Interpreter():
@@ -102,7 +103,9 @@ class Interpreter():
             
     def process_ultrasonic(self, ultrasonic_val):
         if ultrasonic_val < self.stop_thres and ultrasonic_val >= 0:
+            logging.debug("Stop Car: True")
             return True
+        logging.debug("Stop Car: False")
         return False
 
                 

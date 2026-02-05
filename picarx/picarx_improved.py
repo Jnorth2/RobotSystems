@@ -118,8 +118,8 @@ class Picarx(object):
         self.grayscale.reference(self.line_reference)
 
         # --------- ultrasonic init ---------
-        trig, echo= ultrasonic_pins
-        self.ultrasonic = Ultrasonic(Pin(trig), Pin(echo, mode=Pin.IN, pull=Pin.PULL_DOWN))
+        #trig, echo= ultrasonic_pins
+        #self.ultrasonic = Ultrasonic(Pin(trig), Pin(echo, mode=Pin.IN, pull=Pin.PULL_DOWN))
 
         #Exit cleanly and safely
         atexit.register(self.stop)
