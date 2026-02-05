@@ -114,6 +114,7 @@ class Control():
     def update_steer(self, position, stop=False):
         #find angle
         if stop:
+            logging.debug("Obstacle detected, stopping")
             self.px.forward(0)
         elif abs(position) == 1:
             self.px.set_dir_servo_angle(position * self.px.DIR_MAX)
@@ -132,28 +133,36 @@ if __name__ == "__main__":
     interpreter = Interpreter(line_threshold=0.3, is_dark=1, stop_thres=2)
     control = Control(px, 1.75)
 
-    term_bus = rossros.Bus(False, "Timer Termination Bus")
-    timer = rossros.Timer(output_buses=term_bus,duration=10, delay=0.03,termination_buses= term_bus, name="Termination Timer")
-    sensor_bus = rossros.Bus([0, 0, 0], name="Sensor Bus")
-    position_bus = rossros.Bus(0, name="Position Bus")
-    us_sensor_bus = rossros.Bus(0, name="Ultrasonic Sensor Bus")
-    move_bus = rossros.Bus(0, name="Distance Bus")
+    # term_bus = rossros.Bus(False, "Timer Termination Bus")
+    # timer = rossros.Timer(output_buses=term_bus,duration=10, delay=0.03,termination_buses= term_bus, name="Termination Timer")
+    # sensor_bus = rossros.Bus([0, 0, 0], name="Sensor Bus")
+    # position_bus = rossros.Bus(0, name="Position Bus")
+    # us_sensor_bus = rossros.Bus(0, name="Ultrasonic Sensor Bus")
+    # move_bus = rossros.Bus(0, name="Distance Bus")
 
-    ross_sensor = rossros.Producer(sensor.read, sensor_bus, delay= 0.1, termination_buses=term_bus, name="Sensor")
-    ross_us_sensor = rossros.Producer(sensor.read_ultrasonic, us_sensor_bus, delay=0.1, termination_buses=term_bus, name="Ultrasonic Sensor")
-    ross_move = rossros.ConsumerProducer(interpreter.process_ultrasonic, ross_us_sensor, move_bus, delay=0.1, termination_buses=term_bus, name="Move Process")
-    ross_process = rossros.ConsumerProducer(interpreter.process, sensor_bus, position_bus, delay=0.1, termination_buses=term_bus, name="Process")
-    ross_control = rossros.Consumer(control.update_steer, [position_bus, move_bus], delay=0.1, termination_buses=term_bus, name="Control")
+    # ross_sensor = rossros.Producer(sensor.read, sensor_bus, delay= 0.1, termination_buses=term_bus, name="Sensor")
+    # ross_us_sensor = rossros.Producer(sensor.read_ultrasonic, us_sensor_bus, delay=0.1, termination_buses=term_bus, name="Ultrasonic Sensor")
+    # ross_move = rossros.ConsumerProducer(interpreter.process_ultrasonic, ross_us_sensor, move_bus, delay=0.1, termination_buses=term_bus, name="Move Process")
+    # ross_process = rossros.ConsumerProducer(interpreter.process, sensor_bus, position_bus, delay=0.1, termination_buses=term_bus, name="Process")
+    # ross_control = rossros.Consumer(control.update_steer, [position_bus, move_bus], delay=0.1, termination_buses=term_bus, name="Control")
 
-    list_of_processes = [
-        timer,
-        ross_sensor,
-        ross_us_sensor,
-        ross_move,
-        ross_process,
-        ross_control,
-    ]
+    # list_of_processes = [
+    #     timer,
+    #     ross_sensor,
+    #     ross_us_sensor,
+    #     ross_move,
+    #     ross_process,
+    #     ross_control,
+    # ]
 
-    rossros.runConcurrently(list_of_processes)
+    # rossros.runConcurrently(list_of_processes)
+
+    while True:
+        pin_vals = sensor.read()
+        ultrasonic_val = sensor.read_ultrasonic()
+        position = interpreter.process(pin_vals)
+        stop = interpreter.process_ultrasonic(ultrasonic_val)
+        control.update_steer(position, stop)
+        time.sleep(0.1)
 
 
