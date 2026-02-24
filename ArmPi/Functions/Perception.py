@@ -412,8 +412,10 @@ class ArmPerception():
     
     def get_frame(self):
         frame = self.camera.frame
-        self.frame = frame.copy()
-
+        if frame is not None:
+            self.frame = frame.copy()
+        else:
+            self.frame = None
     def stop(self):
         self.camera.camera_close()
         cv2.destroyAllWindows()
@@ -439,9 +441,10 @@ class ArmPerception():
             if max_A > 2500:
                 self.seen_count +=1
                 return contour, max_A, self.last_color
-        max_contour, max_A = 0   
+        max_contour = 0 
+        max_A = 0   
         color = None
-        for key, value in self.color_range:
+        for key, value in self.color_range.items():
             temp_contour, temp_A = self.get_contour(frame, value)
             if temp_contour is not None:
                     if temp_A > max_A:#找最大面积
@@ -528,24 +531,27 @@ class ArmPerception():
         cv2.line(img, (int(img_w / 2), 0), (int(img_w / 2), img_h), (0, 0, 200), 1)
         
         if box is not None and max_A is not None:
-            cv2.drawContours(img, [box], -1, range_rgb[max_A], 2)
+            cv2.drawContours(img, [box], -1, range_rgb[self.last_color], 2)
             cv2.putText(img, '(' + str(self.current_center[0]) + ',' + str(self.current_center[1]) + ')', (min(box[0, 0], box[2, 0]), box[2, 1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, range_rgb[max_A], 1) #绘制中心点
-            
-        cv2.putText(img, "Color: " + self.last_color, (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, self.last_color, 2)
-
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, range_rgb[self.last_color], 1) #绘制中心点
+        if self.last_color is not None:    
+            cv2.putText(img, "Color: " + self.last_color, (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, self.last_color, 2)
+        else:
+            cv2.putText(img, "color: None", (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, range_rgb['black'], 2)
         return img
     
     def camera_loop(self):
         self.get_frame()
-        frame = self.preprocess(self.frame.copy())
-        max_contour, max_A, color = self.get_largest_contour(frame)
-        box = None
-        if max_contour is not None:
-            rect, box = self.make_roi(max_contour)
-            self.track_target(rect)
-        img = self.draw_image(self.frame, box, max_A)
-
+        if self.frame is not None:
+            frame = self.preprocess(self.frame.copy())
+            max_contour, max_A, color = self.get_largest_contour(frame)
+            box = None
+            if max_contour is not None:
+                rect, box = self.make_roi(max_contour)
+                self.track_target(rect)
+            img = self.draw_image(self.frame, box, max_A)
+        else:
+            return None
 
     
         
@@ -568,10 +574,13 @@ if __name__ == '__main__':
     # my_camera.camera_close()
     # cv2.destroyAllWindows()
 
-    perception = ArmPerception(colors="red",size=(640, 480))
+    perception = ArmPerception(colors=["red"],size=(640, 480))
     while True:
+        print("Start of Loop")
         img = perception.camera_loop()
-        cv2.imshow('Frame', img)
-        key = cv2.waitKey(1)
-        if key == 27:
-            break
+        if img is not None:
+            print("no image")
+            cv2.imshow('Frame', img)
+            key = cv2.waitKey(1)
+            if key == 27:
+                break
