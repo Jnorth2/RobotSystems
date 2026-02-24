@@ -11,6 +11,8 @@ from ArmIK.Transform import *
 from ArmIK.ArmMoveIK import *
 import HiwonderSDK.Board as Board
 from CameraCalibration.CalibrationConfig import *
+import atexit
+
 
 if sys.version_info.major == 2:
     print('Please run this program with python3!')
@@ -207,6 +209,7 @@ def move():
                     track = False
                 if start_pick_up: #如果物体没有移动一段时间，开始夹取 If the object has not moved for a while, start gripping
                     action_finish = False
+                    #Claw and roll adjustment
                     if not __isRunning: # 停止以及退出标志位检测 Stop and exit flag detection
                         continue
                     Board.setBusServoPulse(1, servo1 - 280, 500)  # 爪子张开 Claws spread
@@ -215,22 +218,26 @@ def move():
                     Board.setBusServoPulse(2, servo2_angle, 500)
                     time.sleep(0.8)
                     
+                    #Move down
                     if not __isRunning:
                         continue
                     AK.setPitchRangeMoving((world_X, world_Y, 2), -90, -90, 0, 1000)  # 降低高度 lower height
                     time.sleep(2)
                     
+                    #Close gripper
                     if not __isRunning:
                         continue
                     Board.setBusServoPulse(1, servo1, 500)  # 夹持器闭合 Gripper closed
                     time.sleep(1)
                     
+                    #Lift up
                     if not __isRunning:
                         continue
                     Board.setBusServoPulse(2, 500, 500)
                     AK.setPitchRangeMoving((world_X, world_Y, 12), -90, -90, 0, 1000)  # 机械臂抬起 Robotic arm raised
                     time.sleep(1)
                     
+                    #Place in Bin
                     if not __isRunning:
                         continue
                     # 对不同颜色方块进行分类放置 Classify and place blocks of different colors
@@ -378,20 +385,193 @@ def run(img):
                     center_list = []
     return img
 
+class ArmPerception():
+    def __init__(self, colors, size):
+        self.camera = Camera.Camera()
+        self.camera.camera_open()
+        self.frame = None
+        self.get_roi = False
+        self.start_pick = False
+        self.color_range = {}
+        self.last_color = None
+        self.last_center = [0,0]
+        self.current_center = [0,0]
+        self.center_list = []
+        self.rotation_angle = None
+        self.avg_center = [0,0]
+        self.start_pick_up = False
+        self.seen_count = 0
+        self.t1 = time.time()
+        self.start_count_t1 = True
+        self.count = 0
+        self.roi = None
+        self.size = size
+        self.make_color_range(colors)
+
+        atexit.register(self.stop)
+    
+    def get_frame(self):
+        frame = self.camera.frame
+        self.frame = frame.copy()
+
+    def stop(self):
+        self.camera.camera_close()
+        cv2.destroyAllWindows()
+
+    def make_color_range(self, colors):
+        for i in colors:
+            self.color_range[i] = color_range[i]
+
+    def preprocess(self, frame):
+        frame_resize = cv2.resize(frame, self.size, interpolation=cv2.INTER_NEAREST)
+        frame_gb = cv2.GaussianBlur(frame_resize, (11, 11), 11)
+        if self.get_roi and not self.start_pick_up:
+            self.get_roi = False
+            frame_gb = getMaskROI(frame_gb, roi, self.size)    
+    
+        frame_lab = cv2.cvtColor(frame_gb, cv2.COLOR_BGR2LAB) 
+
+        return frame_lab
+    
+    def get_largest_contour(self, frame):
+        if self.last_color is not None:
+            contour, max_A = self.get_contour(frame, self.color_range[self.last_color])
+            if max_A > 2500:
+                self.seen_count +=1
+                return contour, max_A, self.last_color
+        max_contour, max_A = 0   
+        color = None
+        for key, value in self.color_range:
+            temp_contour, temp_A = self.get_contour(frame, value)
+            if temp_contour is not None:
+                    if temp_A > max_A:#找最大面积
+                        max_A = temp_A
+                        color = key
+                        max_contour = temp_contour
+        if max_A > 2500:
+            self.seen_count = 0
+            self.last_color = color
+            return max_contour, max_A, color
+        else:
+            self.last_color = None
+            return None, None, None
+    
+    def getAreaMaxContour(self, contours):
+        contour_area_temp = 0
+        contour_area_max = 0
+        area_max_contour = None
+
+        for c in contours:  # 历遍所有轮廓 Go through all contours
+            contour_area_temp = math.fabs(cv2.contourArea(c))  # 计算轮廓面积Calculate contour area
+            if contour_area_temp > contour_area_max:
+                contour_area_max = contour_area_temp
+                if contour_area_temp > 300:  # 只有在面积大于300时，最大面积的轮廓才是有效的，以过滤干扰 The maximum area contour is only valid when the area is greater than 300 to filter out interference
+                    area_max_contour = c
+
+        return area_max_contour, contour_area_max  # 返回最大的轮廓 Return the largest contour
+
+
+    def get_contour(self, frame, color):
+        frame_mask = cv2.inRange(frame, color[0], color[1])  # 对原图像和掩模进行位运算 Perform bit operations on the original image and mask
+        opened = cv2.morphologyEx(frame_mask, cv2.MORPH_OPEN, np.ones((6, 6), np.uint8))  # 开运算 Open operation
+        closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, np.ones((6, 6), np.uint8))  # 闭运算 closed operation
+        contours = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]  # 找出轮廓 find the outline
+        areaMaxContour, area_max = self.getAreaMaxContour(contours)  # 找出最大轮廓 Find the maximum contour
+        return areaMaxContour, area_max
+    
+    def make_roi(self, contour):
+        rect = cv2.minAreaRect(contour)
+        box = np.int0(cv2.boxPoints(rect))
+        
+        self.roi = getROI(box) #获取roi区域
+        self.get_roi = True
+        img_centerx, img_centery = getCenter(rect, roi, self.size, square_length)  # 获取木块中心坐标
+        
+        self.current_center[0], self.current_center[1] = convertCoordinate(img_centerx, img_centery, self.size) #转换为现实世界坐标
+        return box
+    
+    def track_target(self):
+        distance = math.sqrt(pow(self.current_center[0] - self.current_center[1], 2) + pow(self.current_center[1] - self.last_center[0], 2)) #对比上次坐标来判断是否移动 Compare the last coordinates to determine whether to move
+        self.last_center = self.current_center
+        #print(count,distance)
+        # 累计判断 Cumulative judgment
+        if distance < 0.5:
+            self.count += 1
+            self.center_list.extend((self.current_center[0], self.current_center[1]))
+            if start_count_t1:
+                self.start_count_t1 = False
+                self.t1 = time.time()
+            if time.time() - self.t1 > 1:
+                self.rotation_angle = rect[2] 
+                self.start_count_t1 = True
+                self.avg_center[0], self.avg_center[1] = np.mean(np.array(self.center_list).reshape(count, 2), axis=0)
+                self.center_list = []
+                self.count = 0
+                if self.seen_count == 3:
+                    self.start_pick_up = True
+
+        else:
+            self.t1 = time.time()
+            self.start_count_t1 = True
+            self.center_list = []
+            self.count = 0
+        if self.seen_count == 3:
+            self.seen_count = 0
+            self.draw_color = range_rgb[self.last_color]
+        else:
+            self.draw_color = range_rgb['black']
+
+    def draw_image(self, img, box = None, max_A = None):
+
+        img_h, img_w = img.shape[:2]
+        cv2.line(img, (0, int(img_h / 2)), (img_w, int(img_h / 2)), (0, 0, 200), 1)
+        cv2.line(img, (int(img_w / 2), 0), (int(img_w / 2), img_h), (0, 0, 200), 1)
+        
+        if box is not None and max_A is not None:
+            cv2.drawContours(img, [box], -1, range_rgb[max_A], 2)
+            cv2.putText(img, '(' + str(self.current_center[0]) + ',' + str(self.current_center[1]) + ')', (min(box[0, 0], box[2, 0]), box[2, 1] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, range_rgb[max_A], 1) #绘制中心点
+            
+        cv2.putText(img, "Color: " + self.last_color, (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, self.last_color, 2)
+
+        return img
+    
+    def camera_loop(self):
+        self.get_frame()
+        frame = self.preprocess(self.frame.copy())
+        max_contour, max_A, color = self.get_largest_contour(frame)
+        box = None
+        if max_contour is not None:
+            box = self.make_roi(max_contour)
+            self.track_target()
+        img = self.draw_image(self.frame, box, max_A)
+
+
+    
+        
+
 if __name__ == '__main__':
-    init()
-    start()
-    __target_color = ('red', )
-    my_camera = Camera.Camera()
-    my_camera.camera_open()
+    # init()
+    # start()
+    # __target_color = ('red', )
+    # my_camera = Camera.Camera()
+    # my_camera.camera_open()
+    # while True:
+    #     img = my_camera.frame
+    #     if img is not None:
+    #         frame = img.copy()
+    #         Frame = run(frame)           
+    #         cv2.imshow('Frame', Frame)
+    #         key = cv2.waitKey(1)
+    #         if key == 27:
+    #             break
+    # my_camera.camera_close()
+    # cv2.destroyAllWindows()
+
+    perception = ArmPerception(colors="red",size=(640, 480))
     while True:
-        img = my_camera.frame
-        if img is not None:
-            frame = img.copy()
-            Frame = run(frame)           
-            cv2.imshow('Frame', Frame)
-            key = cv2.waitKey(1)
-            if key == 27:
-                break
-    my_camera.camera_close()
-    cv2.destroyAllWindows()
+        img = perception.camera_loop()
+        cv2.imshow('Frame', img)
+        key = cv2.waitKey(1)
+        if key == 27:
+            break
