@@ -534,8 +534,9 @@ class ArmPerception():
             cv2.drawContours(img, [box], -1, range_rgb[self.last_color], 2)
             cv2.putText(img, '(' + str(self.current_center[0]) + ',' + str(self.current_center[1]) + ')', (min(box[0, 0], box[2, 0]), box[2, 1] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, range_rgb[self.last_color], 1) #绘制中心点
-        if self.last_color is not None:    
-            cv2.putText(img, "Color: " + self.last_color, (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, self.last_color, 2)
+        if self.last_color is not None:
+            #print(f"{self.last_color}")    
+            cv2.putText(img, "Color: " + self.last_color, (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, range_rgb[self.last_color], 2)
         else:
             cv2.putText(img, "color: None", (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, range_rgb['black'], 2)
         return img
@@ -550,6 +551,7 @@ class ArmPerception():
                 rect, box = self.make_roi(max_contour)
                 self.track_target(rect)
             img = self.draw_image(self.frame, box, max_A)
+            return img 
         else:
             return None
 
@@ -574,13 +576,14 @@ if __name__ == '__main__':
     # my_camera.camera_close()
     # cv2.destroyAllWindows()
 
-    perception = ArmPerception(colors=["red"],size=(640, 480))
+    perception = ArmPerception(colors=["red", "blue", "green"],size=(640, 480))
     while True:
-        print("Start of Loop")
+        #print("Start of Loop")
         img = perception.camera_loop()
         if img is not None:
-            print("no image")
             cv2.imshow('Frame', img)
             key = cv2.waitKey(1)
             if key == 27:
                 break
+        else:
+            print("no image")
