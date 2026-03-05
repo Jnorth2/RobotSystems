@@ -517,6 +517,7 @@ class ArmPerception():
         self.count = 0
         self.roi = None
         self.size = size
+        self.track = False
         self.make_color_range(colors)
 
         atexit.register(self.stop)
@@ -609,6 +610,7 @@ class ArmPerception():
         self.last_center = self.current_center
         #print(count,distance)
         # 累计判断 Cumulative judgment
+        perception.track = True
         if distance < 0.5:
             self.count += 1
             self.center_list.extend((self.current_center[0], self.current_center[1]))
@@ -697,6 +699,9 @@ if __name__ == '__main__':
             key = cv2.waitKey(1)
             if key == 27:
                 break
+            if perception.track:
+                movement.move_over_obj(perception.avg_center[0], perception.avg_center[1])
+                perception.track = False
             if perception.start_pick_up:
                 movement.pick_and_place(perception.draw_color, perception.avg_center, perception.rotation_angle)
                 perception.start_pick_up = False
