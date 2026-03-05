@@ -385,6 +385,117 @@ range_rgb = {
 #                     center_list = []
 #     return img
 
+class ArmMovement():
+    def __init__(self):
+        self.coordinate = {
+            'red':   (-15 + 0.5, 12 - 0.5, 1.5),
+            'green': (-15 + 0.5, 6 - 0.5,  1.5),
+            'blue':  (-15 + 0.5, 0 - 0.5,  1.5),
+        }
+        self.servo1 = 500
+        atexit.register(self.stop)
+
+    def stop(self):
+        Board.setBusServoPulse(1, self.servo1 - 70, 300)
+        time.sleep(0.5)
+        Board.setBusServoPulse(2, 500, 500)
+        AK.setPitchRangeMoving((0, 10, 10), -30, -30, -90, 1500)
+        time.sleep(1.5)
+        return
+    def open_gripper(self, world_X, world_Y, rotation_angle):
+        Board.setBusServoPulse(1, self.servo1 - 280, 500)  
+        servo2_angle = getAngle(world_X, world_Y, rotation_angle)
+        Board.setBusServoPulse(2, servo2_angle, 500)
+        time.sleep(0.8)
+
+    def close_gripper(self):
+        Board.setBusServoPulse(1, self.servo1, 500) 
+        time.sleep(1)
+        Board.setBusServoPulse(2, 500, 500)
+
+    def move_vert(self, world_X, world_Y, height=2):
+        AK.setPitchRangeMoving((world_X, world_Y, height), -90, -90, 0, 1000) 
+        time.sleep(2)
+
+    def move_over_obj(self, world_X, world_Y):
+        result = AK.setPitchRangeMoving((world_X, world_Y - 2, 5), -90, -90, 0) 
+        if result == False:
+            return False
+        time.sleep(result[2]/1000) 
+        return True
+    
+    def move_to_place(self, color):
+        result = AK.setPitchRangeMoving((self.coordinate[color][0], self.coordinate[color][1], 12), -90, -90, 0)   
+        time.sleep(result[2]/1000)
+        servo2_angle = getAngle(self.coordinate[color][0], self.coordinate[color][1], -90)
+        Board.setBusServoPulse(2, servo2_angle, 500)
+        time.sleep(0.5)
+
+    def place(self, color):
+        AK.setPitchRangeMoving((self.coordinate[color][0], self.coordinate[color][1], self.coordinate[color][2] + 3), -90, -90, 0, 500)
+        time.sleep(0.5)
+        
+        AK.setPitchRangeMoving((self.coordinate[color]), -90, -90, 0, 1000)
+        time.sleep(0.8)
+        
+        Board.setBusServoPulse(1, self.servo1 - 200, 500) 
+        time.sleep(0.8)
+
+        AK.setPitchRangeMoving((self.coordinate[color][0], self.coordinate[color][1], 12), -90, -90, 0, 800)
+        time.sleep(0.8)
+
+    def initMove(self):
+        Board.setBusServoPulse(1, self.servo1 - 50, 300)
+        Board.setBusServoPulse(2, 500, 500)
+        AK.setPitchRangeMoving((0, 10, 10), -30, -30, -90, 1500)
+
+    def setBuzzer(self, timer):
+        Board.setBuzzer(0)
+        Board.setBuzzer(1)
+        time.sleep(timer)
+        Board.setBuzzer(0)
+
+    def pick_and_place(self, color, center, rotation_angle):
+        self.set_rgb(self, color)
+        self.setBuzzer(0.1)
+
+        self.move_over_obj(center[0], center[1])
+
+        self.open_gripper(center[0], center[1], rotation_angle)
+
+        self.move_vert(center[0], center[1])
+
+        self.close_gripper()
+
+        self.move_vert(center[0], center[1], 12)
+
+        self.move_to_place(color)
+
+        self.place(color)
+
+        self.initMove()
+
+        return True
+
+    def set_rgb(self, color):
+        if color == "red":
+            Board.RGB.setPixelColor(0, Board.PixelColor(255, 0, 0))
+            Board.RGB.setPixelColor(1, Board.PixelColor(255, 0, 0))
+            Board.RGB.show()
+        elif color == "green":
+            Board.RGB.setPixelColor(0, Board.PixelColor(0, 255, 0))
+            Board.RGB.setPixelColor(1, Board.PixelColor(0, 255, 0))
+            Board.RGB.show()
+        elif color == "blue":
+            Board.RGB.setPixelColor(0, Board.PixelColor(0, 0, 255))
+            Board.RGB.setPixelColor(1, Board.PixelColor(0, 0, 255))
+            Board.RGB.show()
+        else:
+            Board.RGB.setPixelColor(0, Board.PixelColor(0, 0, 0))
+            Board.RGB.setPixelColor(1, Board.PixelColor(0, 0, 0))
+            Board.RGB.show()
+    
+
 class ArmPerception():
     def __init__(self, colors, size):
         self.camera = Camera.Camera()
@@ -507,7 +618,7 @@ class ArmPerception():
             if time.time() - self.t1 > 1:
                 self.rotation_angle = rect[2] 
                 self.start_count_t1 = True
-                self.avg_center[0], self.avg_center[1] = np.mean(np.array(self.center_list).reshape(count, 2), axis=0)
+                self.avg_center[0], self.avg_center[1] = np.mean(np.array(self.center_list).reshape(self.count, 2), axis=0)
                 self.center_list = []
                 self.count = 0
                 if self.seen_count == 3:
@@ -575,7 +686,8 @@ if __name__ == '__main__':
     #             break
     # my_camera.camera_close()
     # cv2.destroyAllWindows()
-
+    movement = ArmMovement()
+    movement.initMove()
     perception = ArmPerception(colors=["red", "blue", "green"],size=(640, 480))
     while True:
         #print("Start of Loop")
@@ -585,5 +697,8 @@ if __name__ == '__main__':
             key = cv2.waitKey(1)
             if key == 27:
                 break
+            if perception.start_pick_up:
+                movement.pick_and_place(perception.draw_color, perception.avg_center, perception.rotation_angle)
+                perception.start_pick_up = False
         else:
             print("no image")
