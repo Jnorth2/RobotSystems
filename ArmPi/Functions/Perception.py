@@ -419,10 +419,8 @@ class ArmMovement():
 
     def move_over_obj(self, world_X, world_Y):
         result = AK.setPitchRangeMoving((world_X, world_Y - 2, 5), -90, -90, 0) 
-        if result == False:
-            return False
         time.sleep(result[2]/1000) 
-        return True
+        return result
     
     def move_to_place(self, color):
         result = AK.setPitchRangeMoving((self.coordinate[color][0], self.coordinate[color][1], 12), -90, -90, 0)   
@@ -456,7 +454,7 @@ class ArmMovement():
         Board.setBuzzer(0)
 
     def pick_and_place(self, color, center, rotation_angle):
-        self.set_rgb(self, color)
+        self.set_rgb(color)
         self.setBuzzer(0.1)
 
         self.move_over_obj(center[0], center[1])
@@ -606,9 +604,9 @@ class ArmPerception():
         return rect, box
     
     def track_target(self, rect):
-        distance = math.sqrt(pow(self.current_center[0] - self.current_center[1], 2) + pow(self.current_center[1] - self.last_center[0], 2)) #对比上次坐标来判断是否移动 Compare the last coordinates to determine whether to move
+        distance = math.sqrt(pow(self.current_center[0] - self.last_center[0], 2) + pow(self.current_center[1] - self.last_center[1], 2)) #对比上次坐标来判断是否移动 Compare the last coordinates to determine whether to move
         self.last_center = self.current_center
-        #print(count,distance)
+        print(self.count,distance, self.seen_count)
         # 累计判断 Cumulative judgment
         perception.track = True
         if distance < 0.5:
@@ -700,10 +698,13 @@ if __name__ == '__main__':
             if key == 27:
                 break
             if perception.track:
-                movement.move_over_obj(perception.avg_center[0], perception.avg_center[1])
+                #print(f"track? {perception.track}")
+                moved = movement.move_over_obj(perception.current_center[0], perception.current_center[1])
+                #print(f"moved? {moved}")
                 perception.track = False
             if perception.start_pick_up:
-                movement.pick_and_place(perception.draw_color, perception.avg_center, perception.rotation_angle)
+                print("Start Pick")
+                movement.pick_and_place(perception.last_color, perception.avg_center, perception.rotation_angle)
                 perception.start_pick_up = False
         else:
             print("no image")
